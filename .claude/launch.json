@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pixi-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [".claude/serve_nocache.py", "8125"],
+      "port": 8125
+    }
+  ]
+}
