@@ -13,6 +13,9 @@ This repository is the **turbo fork** of `2019-pixi` (upstream remote). Game
 logic runs on a 120Hz fixed timestep — double the legacy 60Hz step rate, same
 speed as `2019-es7` — and the accumulator catch-up keeps that speed constant
 when low-power devices throttle rendering to 30Hz (see Key Constants below).
+Pass `?og=1` to revert to the original (pre-turbo) timing in either build —
+one 60Hz-normalized step per render frame, no fixed-step catch-up
+(`OG_MODE` in `src/constants.js`; `_ogMode` in `app_formatted.js`).
 
 ## Running the Game
 
