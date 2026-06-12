@@ -172,7 +172,9 @@ export class GameScene extends Phaser.Scene {
     for (let i = this.playerBullets.length - 1; i >= 0; i--) {
       const b = this.playerBullets[i];
       b.loop(d);
-      if (b.y < -b.character.height || b.x < -20 || b.x > GAME_WIDTH + 20) this.removePlayerBullet(b, i);
+      // Original culls player bullets at the HUD line (y=40) — they never
+      // exist behind the top UI.
+      if (b.y <= 40 || b.x < -20 || b.x > GAME_WIDTH + 20) this.removePlayerBullet(b, i);
     }
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const b = this.enemyBullets[i];
@@ -212,13 +214,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ---- Collisions ----
+  // Original gate: a unit takes bullet damage only once it is fully in the
+  // play area — below the top HUD and horizontally on screen. This is what
+  // keeps an entering boss invulnerable until its attack pattern starts.
+  enemyHittable(e) {
+    return e.y >= 40 && e.x >= 0 && e.x <= GAME_WIDTH;
+  }
+
   checkCollisions() {
     for (let i = this.playerBullets.length - 1; i >= 0; i--) {
       const b = this.playerBullets[i];
       if (b.deadFlg) continue;
       for (let j = this.enemies.length - 1; j >= 0; j--) {
         const e = this.enemies[j];
-        if (e.deadFlg) continue;
+        if (e.deadFlg || !this.enemyHittable(e)) continue;
         if (hitTest(b, e)) { this.playerBulletHitEnemy(b, e, i, j); break; }
       }
     }
@@ -253,6 +262,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   playerBulletHitEnemy(bullet, enemy, bi, ei) {
+    // Penetrating big shot: as in the original, an enemy it holds onto takes
+    // at most two hits per bullet — the first on contact, one more on the
+    // 15th overlapping step.
+    if (bullet.name === SHOOT_MODES.BIG) {
+      const idKey = `bulletid${bullet.id}`;
+      const cntKey = `bulletframeCnt${bullet.id}`;
+      if (enemy[idKey] == null) {
+        enemy[idKey] = 0;
+        enemy[cntKey] = 0;
+      } else {
+        enemy[cntKey] += 1;
+        if (enemy[cntKey] % 15 !== 0) return;
+        enemy[idKey] += 1;
+        if (enemy[idKey] > 1) return;
+      }
+    }
     const before = enemy.hp;
     enemy.onDamage(bullet.damage);
     bullet.onDamage(1, before > 0 ? 'normal' : 'infinity');
