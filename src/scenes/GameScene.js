@@ -4,6 +4,7 @@ import {
   SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X,
   SHOOT_MODES, SHOOT_SPEEDS, ITEM_TYPES, BGM_INFO,
   STEP_MS, MAX_FRAME_MS, OG_MODE,
+  HIT_GATE_TOP_Y, CA_GATE_TOP_Y,
 } from '../constants.js';
 import { gameState, saveHighScore } from '../state.js';
 import { frameRange } from '../anims.js';
@@ -113,12 +114,9 @@ export class GameScene extends Phaser.Scene {
       else Sound.bgmPlay(this.stageBgmName);
     }
 
-    // Input
+    // Input — keyboard (arrows move, Space fires CA) mirrors the pointer drag.
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.wasd = this.input.keyboard.addKeys({
-      left: Phaser.Input.Keyboard.KeyCodes.A,
-      right: Phaser.Input.Keyboard.KeyCodes.D,
-    });
+    this.input.keyboard.on('keyup-SPACE', () => this.hud.requestCaFire());
     this.input.on('pointerdown', (p) => { this.dragging = true; this.player.unitX = p.x; });
     this.input.on('pointermove', (p) => { if (this.dragging) this.player.unitX = p.x; });
     this.input.on('pointerup', () => { this.dragging = false; });
@@ -138,13 +136,6 @@ export class GameScene extends Phaser.Scene {
     this.player.shootStart();
   }
 
-  handleKeyboardInput() {
-    if (!this.player) return;
-    this.player.keyLeft = this.cursors.left.isDown || this.wasd.left.isDown;
-    this.player.keyRight = this.cursors.right.isDown || this.wasd.right.isDown;
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) this.caFire();
-  }
-
   update(time, delta) {
     if (OG_MODE) {
       this.fixedUpdate(delta / (1000 / 60), delta);
@@ -161,8 +152,11 @@ export class GameScene extends Phaser.Scene {
   // (they diverge on purpose in turbo: d=1 per 8.333ms step).
   fixedUpdate(d, stepMs) {
     gameState.frame = (gameState.frame + 1) % 60;
-    this.handleKeyboardInput();
-    if (this.theWorldFlg) { this.player && this.player.loop(d); return; }
+    if (this.player) {
+      this.player.keyLeft = this.cursors.left.isDown;
+      this.player.keyRight = this.cursors.right.isDown;
+    }
+    if (this.theWorldFlg) return; // "the world": freeze the player (and all gameplay) until it clears
 
     const scroll = this.stageScrollSpeed * d;
     this.stageBg.loop(scroll);
@@ -214,21 +208,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ---- Collisions ----
-  // Original gate: a unit takes bullet damage only once it is fully in the
-  // play area — below the top HUD and horizontally on screen. This is what
-  // keeps an entering boss invulnerable until its attack pattern starts.
-  enemyHittable(e) {
-    return e.y >= 40 && e.x >= 0 && e.x <= GAME_WIDTH;
-  }
-
   checkCollisions() {
     for (let i = this.playerBullets.length - 1; i >= 0; i--) {
       const b = this.playerBullets[i];
       if (b.deadFlg) continue;
       for (let j = this.enemies.length - 1; j >= 0; j--) {
         const e = this.enemies[j];
-        if (e.deadFlg || !this.enemyHittable(e)) continue;
+        if (e.deadFlg) continue;
+        // Don't let shots connect while the enemy is still behind the top HUD or off the
+        // sides (matches original). Gate on the sprite centre, not the top edge — Fang's
+        // 182px-tall sprite rests with its top edge above the HUD line and a top-edge gate
+        // would leave it permanently unhittable.
+        if (e.y < HIT_GATE_TOP_Y || e.x < 0 || e.x > GAME_WIDTH) continue;
         if (hitTest(b, e)) { this.playerBulletHitEnemy(b, e, i, j); break; }
+      }
+    }
+    // Player bullets shoot down enemy bullets — in the original, enemy bullets share the enemy
+    // hit-test list, so the same player-shot collision (damage both, award the bullet's score on
+    // kill) applies. Same top-HUD gate as enemies.
+    for (let i = this.playerBullets.length - 1; i >= 0; i--) {
+      const b = this.playerBullets[i];
+      if (b.deadFlg) continue;
+      for (let j = this.enemyBullets.length - 1; j >= 0; j--) {
+        const eb = this.enemyBullets[j];
+        if (eb.deadFlg) continue;
+        if (eb.y + eb.hitArea.y < HIT_GATE_TOP_Y) continue;
+        if (hitTest(b, eb)) { this.playerBulletHitEnemy(b, eb, i, j); break; }
       }
     }
     if (!this.player.deadFlg && !this.player.barrierFlg) {
@@ -526,7 +531,8 @@ export class GameScene extends Phaser.Scene {
     this.theWorldFlg = true;
     this.hud.caFireFlg = true;
     if (this.boss) this.boss.onTheWorld(true);
-    this.player.shootStop();
+    // Keep the player auto-firing: "the world" freezes the loop (see update), and it
+    // resumes shooting when theWorldFlg clears — matching the original (Player.caFire is a no-op).
     this.clearBullets();
     this.cutin.start();
     Sound.play('g_ca_voice');
@@ -565,7 +571,8 @@ export class GameScene extends Phaser.Scene {
 
   applyCADamage() {
     [...this.enemies].forEach((e, i) => {
-      if (e && !e.deadFlg) this.time.delayedCall(i * 5, () => {
+      // Skip enemies still behind the top HUD, like the original (CA gates a touch higher than shots).
+      if (e && !e.deadFlg && e.y + e.hitArea.y >= CA_GATE_TOP_Y) this.time.delayedCall(i * 5, () => {
         if (e && !e.deadFlg) { e.onDamage(gameState.caDamage); if (e.hp <= 0) this.handleEnemyRemoved(e); }
       });
     });

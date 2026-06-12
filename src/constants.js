@@ -31,6 +31,13 @@ export const MAX_FRAME_MS = 66.67;
 export const OG_MODE = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('og') === '1';
 
+// Enemies/bosses descend from the top behind the HUD and are only hittable once
+// they clear it — matching the original (player shots gate at y >= 40; the CA
+// screen-nuke at y >= 20). Without this they can be hit/killed while still
+// behind the HUD, before being visible.
+export const HIT_GATE_TOP_Y = 40;
+export const CA_GATE_TOP_Y = 20;
+
 export const SCENES = {
   BOOT: 'BootScene',
   PRELOAD: 'PreloadScene',
