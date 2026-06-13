@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import {
   SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X,
   SHOOT_MODES, SHOOT_SPEEDS, ITEM_TYPES, BGM_INFO,
-  STEP_MS, MAX_FRAME_MS, OG_MODE,
+  STEP_MS, MAX_FRAME_MS, OG_MODE, AKUMA_MODE,
   HIT_GATE_TOP_Y, CA_GATE_TOP_Y,
 } from '../constants.js';
 import { gameState, saveHighScore } from '../state.js';
@@ -353,7 +353,7 @@ export class GameScene extends Phaser.Scene {
     let dataKey = `boss${gameState.stageId}`;
     let BossClass = classes[gameState.stageId] || BossBison;
     let vegaToGoki = false;
-    if (gameState.stageId === 3) { BossClass = BossVega; dataKey = 'boss3'; vegaToGoki = gameState.continueCnt === 0; }
+    if (gameState.stageId === 3) { BossClass = BossVega; dataKey = 'boss3'; vegaToGoki = gameState.continueCnt === 0 || AKUMA_MODE; }
     if (gameState.stageId === 4) { BossClass = BossFang; dataKey = 'boss4'; }
 
     const data = { ...this.recipe.bossData[dataKey], explosion: this.explosionFrames };
