@@ -31,6 +31,27 @@ export const MAX_FRAME_MS = 66.67;
 export const OG_MODE = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('og') === '1';
 
+// Boot-time cheats surfaced by the CMG launcher's in-game OSD (and usable
+// standalone via the query string). MAX_STAGE_ID is the last playable stage
+// (stages 0–4; clearing 4 rolls the ending).
+export const MAX_STAGE_ID = 4;
+
+// ?stage=N (0–MAX_STAGE_ID) starts a fresh run at stage N instead of 0.
+// Applied right after resetRun() in TitleScene. null when absent/invalid.
+export const START_STAGE = (() => {
+  if (typeof window === 'undefined') return null;
+  const raw = new URLSearchParams(window.location.search).get('stage');
+  if (raw == null || raw === '') return null;
+  const n = Math.floor(Number(raw));
+  return Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAGE_ID, n)) : null;
+})();
+
+// ?akuma=1 forces the stage-3 Vega→Goki (Akuma) transform regardless of how
+// many continues were used (normally Goki only appears on a no-continue run).
+// Combine with ?stage=3 to jump straight to the Akuma fight.
+export const AKUMA_MODE = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('akuma') === '1';
+
 // Enemies/bosses descend from the top behind the HUD and are only hittable once
 // they clear it — matching the original (player shots gate at y >= 40; the CA
 // screen-nuke at y >= 20). Without this they can be hit/killed while still

@@ -141,6 +141,24 @@
 		document.querySelector('#howtoModal .howtoModalCover').addEventListener('click', window.howtoModalClose);
 	</script>
 
+	<!-- When embedded in the CMG launcher, advertise this game's cheats so the
+	     in-game OSD ("Guide") can build a Cheats submenu. The launcher reads them
+	     off this postMessage; each cheat maps to a boot-time URL param it toggles
+	     by reloading the iframe (og → original timing, akuma → force the Goki/Akuma
+	     boss, stage → start at stage 0–4). Build-agnostic, so it runs for both the
+	     Phaser port and the ?pixi=1 build. -->
+	<script>
+		if (self !== top) {
+			try {
+				parent.postMessage({ type: 'cmg-cheats', cheats: [
+					{ param: 'og',    kind: 'toggle', label: 'OG timing' },
+					{ param: 'akuma', kind: 'toggle', label: 'Akuma boss' },
+					{ param: 'stage', kind: 'slider', label: 'Stage', min: 0, max: 4, step: 1 }
+				] }, '*');
+			} catch (e) { /* not embedded / blocked — ignore */ }
+		}
+	</script>
+
 	<!-- Boot the Phaser port by default, or the original PixiJS build with ?pixi=1. -->
 	<script>
 		(function () {

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 // TitleScene.js — title screen. Origins/positions match the original PixiJS layout:
 // titleG slides in, logo + subtitle scale down, start button flashes, side buttons pop in.
-import { SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE } from '../constants.js';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE, START_STAGE } from '../constants.js';
 import { gameState, resetRun } from '../state.js';
 import { NumberDisplay } from '../ui/NumberDisplay.js';
 import { Button } from '../ui/Button.js';
@@ -109,6 +109,8 @@ export class TitleScene extends Phaser.Scene {
     this.startEnabled = false;
     Sound.play('se_decision');
     resetRun();
+    // ?stage=N cheat: begin the run at stage N instead of 0 (resetRun zeroed it).
+    if (START_STAGE != null) gameState.stageId = START_STAGE;
     const fade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000).setOrigin(0, 0).setAlpha(0).setDepth(2000);
     this.tweens.add({ targets: fade, alpha: 1, duration: 800, onComplete: () => this.scene.start(SCENES.ADV) });
   }
