@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import {
   SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X,
   SHOOT_MODES, SHOOT_SPEEDS, ITEM_TYPES, BGM_INFO,
-  STEP_MS, MAX_FRAME_MS, OG_MODE, AKUMA_MODE,
+  STEP_MS, MAX_FRAME_MS, OG_MODE, AKUMA_MODE, AKUMA_STAGE,
   HIT_GATE_TOP_Y, CA_GATE_TOP_Y,
 } from '../constants.js';
 import { gameState, saveHighScore } from '../state.js';
@@ -105,6 +105,10 @@ export class GameScene extends Phaser.Scene {
     // Stage enemy layout
     const stageData = this.recipe[`stage${gameState.stageId}`];
     this.stageEnemyPositionList = stageData && stageData.enemylist ? [...stageData.enemylist].reverse() : [];
+    // ?akuma=1 cheat: skip this stage's enemy waves so the player reaches the
+    // boss (and the Vega→Goki/Akuma intro) on the very first wave tick — with an
+    // empty list enemyWave() goes straight to bossAdd() instead of clearing rows.
+    if (AKUMA_MODE && gameState.stageId === AKUMA_STAGE) this.stageEnemyPositionList = [];
 
     // BGM
     const bossData = this.recipe.bossData[`boss${gameState.stageId}`];

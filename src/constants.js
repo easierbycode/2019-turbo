@@ -46,9 +46,14 @@ export const START_STAGE = (() => {
   return Number.isFinite(n) ? Math.max(0, Math.min(MAX_STAGE_ID, n)) : null;
 })();
 
-// ?akuma=1 forces the stage-3 Vega→Goki (Akuma) transform regardless of how
-// many continues were used (normally Goki only appears on a no-continue run).
-// Combine with ?stage=3 to jump straight to the Akuma fight.
+// The stage whose boss is the Vega→Goki (Akuma) fight.
+export const AKUMA_STAGE = 3;
+
+// ?akuma=1 jumps straight to the Akuma fight: it starts the run on AKUMA_STAGE
+// with that stage's enemy waves skipped (see GameScene), and forces the
+// Vega→Goki (Akuma) transform regardless of how many continues were used
+// (normally Goki only appears on a no-continue run). An explicit ?stage=N still
+// wins over the implied start stage, so ?stage=3 alone plays the full stage.
 export const AKUMA_MODE = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('akuma') === '1';
 
