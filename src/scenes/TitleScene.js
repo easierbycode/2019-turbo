@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 // TitleScene.js — title screen. Origins/positions match the original PixiJS layout:
 // titleG slides in, logo + subtitle scale down, start button flashes, side buttons pop in.
-import { SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE, START_STAGE } from '../constants.js';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_X, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE, START_STAGE, AKUMA_MODE, AKUMA_STAGE } from '../constants.js';
 import { gameState, resetRun } from '../state.js';
 import { NumberDisplay } from '../ui/NumberDisplay.js';
 import { Button } from '../ui/Button.js';
@@ -111,8 +111,15 @@ export class TitleScene extends Phaser.Scene {
     resetRun();
     // ?stage=N cheat: begin the run at stage N instead of 0 (resetRun zeroed it).
     if (START_STAGE != null) gameState.stageId = START_STAGE;
+    // ?akuma=1 cheat (no explicit stage): jump straight to the Akuma fight so
+    // selecting "Akuma boss" in the launcher lands on AKUMA_STAGE — GameScene
+    // then skips that stage's waves so the boss enters immediately.
+    else if (AKUMA_MODE) gameState.stageId = AKUMA_STAGE;
+    // ?akuma=1 also bypasses the story interlude (AdvScene), dropping straight
+    // into the stage so the player goes right to the Akuma boss intro.
+    const nextScene = AKUMA_MODE ? SCENES.GAME : SCENES.ADV;
     const fade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000).setOrigin(0, 0).setAlpha(0).setDepth(2000);
-    this.tweens.add({ targets: fade, alpha: 1, duration: 800, onComplete: () => this.scene.start(SCENES.ADV) });
+    this.tweens.add({ targets: fade, alpha: 1, duration: 800, onComplete: () => this.scene.start(nextScene) });
   }
 
   update(time, delta) {
