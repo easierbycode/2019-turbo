@@ -6,12 +6,28 @@ import { SCENES, GAME_WIDTH, GAME_HEIGHT, CENTER_Y } from '../constants.js';
 import { gameState } from '../state.js';
 import { SCENARIO_EN } from '../scenario.js';
 import * as Sound from '../sound.js';
+import {
+  runSceneScriptCreate, runSceneScriptStart, runSceneScriptEnd,
+  runSceneScriptUpdate,
+} from '../scene-script.js';
 
 export class AdvScene extends Phaser.Scene {
   constructor() { super(SCENES.ADV); }
 
+  // Context options handed to a player scene script (see src/scene-script.js).
+  // ctx.next() runs the default hand-off to GameScene.
+  sceneScriptOpts() {
+    return { Phaser, state: gameState, next: () => this._finishNow() };
+  }
+
   create() {
+    this._finished = false; // scene instances are reused across stages
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000).setOrigin(0, 0);
+
+    // A replace-mode scene script owns the whole story intro; it calls
+    // ctx.next() to drop into the stage.
+    if (runSceneScriptCreate('adv', this, this.sceneScriptOpts())) return;
+
     Sound.bgmPlay('adventure_bgm');
 
     const key = `stage${gameState.stageId}`;
@@ -19,10 +35,10 @@ export class AdvScene extends Phaser.Scene {
     this.partNum = 0;
 
     // Background image (top-left origin, 256x220)
-    this.bgSprite = this.add.image(0, 0, 'game_ui', 'advBg0.gif').setOrigin(0, 0);
+    this.bgSprite = this.add.image(0, 0, 'game_ui', 'advBg0.gif').setOrigin(0, 0).setName('bg');
 
     // Foreground overlay tiled below the background
-    this.cover = this.add.tileSprite(0, 220, GAME_WIDTH, GAME_HEIGHT - 220, 'game_asset', 'stagebgOver.gif').setOrigin(0, 0);
+    this.cover = this.add.tileSprite(0, 220, GAME_WIDTH, GAME_HEIGHT - 220, 'game_asset', 'stagebgOver.gif').setOrigin(0, 0).setName('cover');
 
     // Dialogue box (drawn first, behind the name box)
     this.txtBox = this.add.graphics();
@@ -31,7 +47,7 @@ export class AdvScene extends Phaser.Scene {
     this.txt = this.add.text(15, CENTER_Y + 30, '', {
       fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#ffffff', lineSpacing: 4,
       wordWrap: { width: 230 },
-    }).setOrigin(0, 0);
+    }).setOrigin(0, 0).setName('text');
 
     // Name box ("G") — on top of the dialogue box
     this.nameBox = this.add.graphics();
@@ -49,6 +65,13 @@ export class AdvScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-SPACE', () => this.advance());
 
     this.showPart();
+
+    // Hook-mode scene script: runs alongside the default story intro.
+    runSceneScriptStart('adv', this, this.sceneScriptOpts());
+  }
+
+  update(time, delta) {
+    runSceneScriptUpdate('adv', this, time, delta);
   }
 
   showPart() {
@@ -96,6 +119,16 @@ export class AdvScene extends Phaser.Scene {
   }
 
   finish() {
+    // Scene-script onEnd hook: may take over the hand-off (it then calls
+    // ctx.next(), which runs _finishNow).
+    if (runSceneScriptEnd('adv', this, this.sceneScriptOpts())) return;
+    this._finishNow();
+  }
+
+  // Default story → stage transition (also the ctx.next() of scripts).
+  _finishNow() {
+    if (this._finished) return;
+    this._finished = true;
     Sound.play('se_correct');
     Sound.stopBgm('adventure_bgm');
     this.scene.start(SCENES.GAME);

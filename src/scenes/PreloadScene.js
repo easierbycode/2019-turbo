@@ -5,6 +5,7 @@ import { ATLASES, IMAGES, SOUNDS, RECIPE, SCENES, CENTER_X, CENTER_Y, LANG, STEP
 import { gameState, loadHighScore } from '../state.js';
 import { Button } from '../ui/Button.js';
 import * as Sound from '../sound.js';
+import { initSceneScripts } from '../scene-script.js';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super(SCENES.PRELOAD); }
@@ -28,7 +29,13 @@ export class PreloadScene extends Phaser.Scene {
     for (const key in IMAGES) this.load.image(key, IMAGES[key]);
     this.load.json(RECIPE.key, RECIPE.path);
     for (const key in SOUNDS) this.load.audio(key, SOUNDS[key]);
-    this.load.once('complete', () => this.showModeSelect());
+    this.load.once('complete', () => {
+      // Resolve any player scene scripts (URL / gist / editor hand-off) before
+      // the title can start, so TitleScene/AdvScene see them synchronously.
+      // initSceneScripts never rejects — a broken script logs and is skipped.
+      initSceneScripts({ recipe: this.cache.json.get(RECIPE.key) })
+        .then(() => this.showModeSelect());
+    });
     this.load.start();
   }
 

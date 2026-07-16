@@ -7,31 +7,47 @@ import { NumberDisplay } from '../ui/NumberDisplay.js';
 import { Button } from '../ui/Button.js';
 import { StaffrollPanel } from '../ui/StaffrollPanel.js';
 import * as Sound from '../sound.js';
+import {
+  runSceneScriptCreate, runSceneScriptStart, runSceneScriptEnd,
+  runSceneScriptUpdate, isSceneScriptReplaced,
+} from '../scene-script.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() { super(SCENES.TITLE); }
 
+  // Context options handed to a player scene script (see src/scene-script.js).
+  // ctx.next() runs the default hand-off to the next scene.
+  sceneScriptOpts() {
+    return { Phaser, state: gameState, next: () => this.proceedToNext() };
+  }
+
   create() {
+    this._transitioning = false; // scene instances are reused across runs
+
+    // A replace-mode scene script owns the whole title screen; it calls
+    // ctx.next() to hand off to the story/game.
+    if (runSceneScriptCreate('title', this, this.sceneScriptOpts())) return;
+
     // Scrolling background
-    this.bg = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'title_bg').setOrigin(0, 0);
+    this.bg = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'title_bg').setOrigin(0, 0).setName('bg');
 
     // titleG art lives in a wrapper that slides in from the right (top-left origin)
-    this.titleGWrap = this.add.container(GAME_WIDTH, 100);
-    this.titleG = this.add.image(0, 0, 'game_ui', 'titleG.gif').setOrigin(0, 0);
+    this.titleGWrap = this.add.container(GAME_WIDTH, 100).setName('titleGWrap');
+    this.titleG = this.add.image(0, 0, 'game_ui', 'titleG.gif').setOrigin(0, 0).setName('titleG');
     this.titleGWrap.add(this.titleG);
 
     // Logo + subtitle (centre origin, start big/high then settle)
-    this.logo = this.add.image(0, 0, 'game_ui', 'logo.gif').setOrigin(0.5);
+    this.logo = this.add.image(0, 0, 'game_ui', 'logo.gif').setOrigin(0.5).setName('logo');
     this.logo.setPosition(this.logo.width / 2, -this.logo.height / 2).setScale(2);
     const subFrame = LANG === 'ja' ? 'subTitle.gif' : 'subTitleEn.gif';
-    this.subTitle = this.add.image(0, 0, 'game_ui', subFrame).setOrigin(0.5);
+    this.subTitle = this.add.image(0, 0, 'game_ui', subFrame).setOrigin(0.5).setName('subTitle');
     this.subTitle.setPosition(this.subTitle.width / 2, -this.logo.height / 2).setScale(3);
 
     // Bottom black belt
     this.belt = this.add.rectangle(0, GAME_HEIGHT - 120, GAME_WIDTH, 120, 0x000000).setOrigin(0, 0);
 
     // Start button (centre origin), hidden until intro completes
-    this.startBtn = this.add.image(CENTER_X, 330, 'game_ui', 'titleStartText.gif').setOrigin(0.5).setAlpha(0);
+    this.startBtn = this.add.image(CENTER_X, 330, 'game_ui', 'titleStartText.gif').setOrigin(0.5).setAlpha(0).setName('startBtn');
 
     // Copyright (bottom-left, top-left origin)
     this.copyright = this.add.image(0, 0, 'game_ui', 'titleCopyright.gif').setOrigin(0, 0);
@@ -62,6 +78,9 @@ export class TitleScene extends Phaser.Scene {
 
     this.startEnabled = false;
     this.playIntro();
+
+    // Hook-mode scene script: runs alongside the default title screen.
+    runSceneScriptStart('title', this, this.sceneScriptOpts());
   }
 
   playIntro() {
@@ -108,6 +127,16 @@ export class TitleScene extends Phaser.Scene {
     if (!this.startEnabled) return;
     this.startEnabled = false;
     Sound.play('se_decision');
+    // Scene-script onEnd hook: may take over the hand-off (it then calls
+    // ctx.next(), which runs proceedToNext).
+    if (runSceneScriptEnd('title', this, this.sceneScriptOpts())) return;
+    this.proceedToNext();
+  }
+
+  // Default title → story/game transition (also the ctx.next() of scripts).
+  proceedToNext() {
+    if (this._transitioning) return;
+    this._transitioning = true;
     resetRun();
     // ?stage=N cheat: begin the run at stage N instead of 0 (resetRun zeroed it).
     if (START_STAGE != null) gameState.stageId = START_STAGE;
@@ -123,6 +152,8 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    runSceneScriptUpdate('title', this, time, delta);
+    if (isSceneScriptReplaced(this)) return;
     if (OG_MODE) {
       if (this.bg) this.bg.tilePositionX += 0.5;
       return;

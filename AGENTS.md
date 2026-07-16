@@ -6,7 +6,7 @@ This file provides guidance to coding agents working in this repository.
 
 This is a Street Fighter-themed vertical shoot-'em-up ("APRIL FOOL 2019 WORLD
 PRESIDENT CHALLENGES A STG"), originally a PixiJS webpack bundle, now ported to
-**Phaser 4.1.0**. It runs as a vanilla ES-module app — **no bundler, no npm, no
+**Phaser 4.2.1**. It runs as a vanilla ES-module app — **no bundler, no npm, no
 build step**. Phaser is loaded from a CDN via an import map.
 
 This repository is the **turbo fork** of `2019-pixi` (upstream remote). Game
@@ -32,7 +32,7 @@ no linter, and no `package.json`.
 ## Entry Point Flow
 
 `index.html` declares an import map mapping `phaser` →
-`https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.esm.js`, then loads
+`https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.esm.js`, then loads
 `src/main.js` as a module. `main.js` builds the `Phaser.Game` (256×480,
 `pixelArt`, `Scale.FIT` + `CENTER_BOTH`, parented to `#canvas`), registers the
 scene list, and calls `initSound(game)`.
@@ -61,6 +61,8 @@ Every module that references the `Phaser` namespace imports it explicitly
 - `objects/` — game-object classes (see hierarchy below).
 - `ui/` — HUD and UI widgets.
 - `scenes/` — Phaser scenes (see flow below).
+- `scene-script.js` — player scene-script runtime (kept in sync verbatim with
+  `cmg/static/phaser-plugins/scene-script.js`; see Scene Scripts below).
 
 ## Scene Flow
 
@@ -75,6 +77,23 @@ on clearing the final stage `CongraScene` → `EndingScene` → `ResultScene`.
 `GameScene` is the bulk of the logic: wave spawning, player/enemy/bullet/item
 updates, AABB collisions, CA (Critical Art) bomb, boss timer, and all scene
 transitions.
+
+## Scene Scripts (custom title / story intro)
+
+Players can attach a script to `TitleScene` and/or `AdvScene` that either
+hooks the default scene (`onStart`/`onEnd`/`update`) or replaces it entirely
+(`create`); the script's `ctx` exposes the current scene, a live
+`ctx.gameObjects` list, `ctx.find(name)`, the shared `gameState` and a
+`ctx.next()` continuation. Sources (priority order): the CMG level editor's
+`?editorPlay=1` + localStorage hand-off, `?titleScript=` / `?advScript=`
+query params (a URL or `gist:[user/]id[@rev][%23file]`, mode via
+`?titleScriptMode=replace` / `?advScriptMode=replace`), or
+`recipe.sceneScripts` in `game.json`. `.ts` and `.svelte` sources are
+compiled in the browser (sucrase / Svelte 5, lazily from esm.sh); `.svelte`
+components mount as a DOM overlay above the canvas with `{ ctx }` props.
+Scripts are resolved once in `PreloadScene` before the title can start
+(`initSceneScripts`); a broken script logs and the default scene runs.
+Runtime: `src/scene-script.js`; working examples: `examples/scene-scripts/`.
 
 ## Class Hierarchy (Game Objects)
 
