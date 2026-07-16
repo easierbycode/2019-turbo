@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 // PreloadScene.js — plays the original loading spinner while downloading every asset,
 // then shows the PC/SP mode select (left-aligned, matching the original layout).
-import { ATLASES, IMAGES, SOUNDS, RECIPE, SCENES, CENTER_X, CENTER_Y, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE } from '../constants.js';
-import { gameState, loadHighScore } from '../state.js';
+import { ATLASES, IMAGES, SOUNDS, RECIPE, SCENES, CENTER_X, CENTER_Y, LANG, STEP_MS, MAX_FRAME_MS, OG_MODE, EX_CHEAT } from '../constants.js';
+import { gameState, loadHighScore, loadExUnlocked } from '../state.js';
 import { Button } from '../ui/Button.js';
 import * as Sound from '../sound.js';
 
@@ -51,6 +51,8 @@ export class PreloadScene extends Phaser.Scene {
 
   showModeSelect() {
     loadHighScore();
+    loadExUnlocked();
+    if (EX_CHEAT) gameState.exUnlocked = true;
     if (this.loadingG) { this.loadingG.destroy(); this.loadingG = null; }
     if (this.loadingBg) { this.loadingBg.destroy(); this.loadingBg = null; }
 

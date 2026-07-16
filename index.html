@@ -153,8 +153,30 @@
 				parent.postMessage({ type: 'cmg-cheats', cheats: [
 					{ param: 'og',    kind: 'toggle', label: 'OG timing' },
 					{ param: 'akuma', kind: 'toggle', label: 'Akuma boss' },
-					{ param: 'stage', kind: 'slider', label: 'Stage', min: 0, max: 4, step: 1 }
+					{ param: 'stage', kind: 'slider', label: 'Stage', min: 0, max: 4, step: 1 },
+					{ param: 'ex',    kind: 'toggle', label: 'EX unlocked' }
 				] }, '*');
+				// EX version (the super-scaler 3D build, ex.html) — advertised only
+				// once unlocked (cleared-game cookie, or the ?ex=1 cheat above), so
+				// the launcher's Guide gains a "Play EX" row exactly when the player
+				// has earned it. Mid-session unlocks re-advertise from state.js.
+				// The URL is resolved against this page so the launcher doesn't need
+				// to know where the game is hosted.
+				if (/(?:^|;\s*)afc2019_exUnlocked=1(?:;|$)/.test(document.cookie)
+						|| new URLSearchParams(location.search).get('ex') === '1') {
+					parent.postMessage({
+						type: 'cmg-ex',
+						url: new URL('ex.html', location.href).href,
+						label: 'EX · Super Scaler 3D'
+					}, '*');
+				}
+				// The Level Editor ships next to the game and is always available —
+				// its Save as 3D produces a super-scaler build of whatever is edited.
+				parent.postMessage({
+					type: 'cmg-ex',
+					url: new URL('level-editor.html', location.href).href,
+					label: 'Level Editor'
+				}, '*');
 			} catch (e) { /* not embedded / blocked — ignore */ }
 		}
 	</script>
