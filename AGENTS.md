@@ -61,6 +61,8 @@ Every module that references the `Phaser` namespace imports it explicitly
 - `objects/` — game-object classes (see hierarchy below).
 - `ui/` — HUD and UI widgets.
 - `scenes/` — Phaser scenes (see flow below).
+- `scene-script.js` — player scene-script runtime (kept in sync verbatim with
+  `cmg/static/phaser-plugins/scene-script.js`; see Scene Scripts below).
 
 ## Scene Flow
 
@@ -75,6 +77,23 @@ on clearing the final stage `CongraScene` → `EndingScene` → `ResultScene`.
 `GameScene` is the bulk of the logic: wave spawning, player/enemy/bullet/item
 updates, AABB collisions, CA (Critical Art) bomb, boss timer, and all scene
 transitions.
+
+## Scene Scripts (custom title / story intro)
+
+Players can attach a script to `TitleScene` and/or `AdvScene` that either
+hooks the default scene (`onStart`/`onEnd`/`update`) or replaces it entirely
+(`create`); the script's `ctx` exposes the current scene, a live
+`ctx.gameObjects` list, `ctx.find(name)`, the shared `gameState` and a
+`ctx.next()` continuation. Sources (priority order): the CMG level editor's
+`?editorPlay=1` + localStorage hand-off, `?titleScript=` / `?advScript=`
+query params (a URL or `gist:[user/]id[@rev][%23file]`, mode via
+`?titleScriptMode=replace` / `?advScriptMode=replace`), or
+`recipe.sceneScripts` in `game.json`. `.ts` and `.svelte` sources are
+compiled in the browser (sucrase / Svelte 5, lazily from esm.sh); `.svelte`
+components mount as a DOM overlay above the canvas with `{ ctx }` props.
+Scripts are resolved once in `PreloadScene` before the title can start
+(`initSceneScripts`); a broken script logs and the default scene runs.
+Runtime: `src/scene-script.js`; working examples: `examples/scene-scripts/`.
 
 ## Class Hierarchy (Game Objects)
 
