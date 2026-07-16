@@ -35,3 +35,9 @@ initSound(game);
 
 // Expose for the how-to modal handlers in index.html.
 window.__game = game;
+
+// Canonical handle every cmg game exposes, for the debugger and for the
+// launcher's gamepad-support / controller-configurator, which look up
+// globalThis.__PHASER_GAME__ to start a scene. Alias, not a rename — the
+// how-to modal above still uses __game.
+globalThis.__PHASER_GAME__ = game;
