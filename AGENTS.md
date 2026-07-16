@@ -6,7 +6,7 @@ This file provides guidance to coding agents working in this repository.
 
 This is a Street Fighter-themed vertical shoot-'em-up ("APRIL FOOL 2019 WORLD
 PRESIDENT CHALLENGES A STG"), originally a PixiJS webpack bundle, now ported to
-**Phaser 4.1.0**. It runs as a vanilla ES-module app — **no bundler, no npm, no
+**Phaser 4.2.1**. It runs as a vanilla ES-module app — **no bundler, no npm, no
 build step**. Phaser is loaded from a CDN via an import map.
 
 This repository is the **turbo fork** of `2019-pixi` (upstream remote). Game
@@ -32,7 +32,7 @@ no linter, and no `package.json`.
 ## Entry Point Flow
 
 `index.html` declares an import map mapping `phaser` →
-`https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.esm.js`, then loads
+`https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.esm.js`, then loads
 `src/main.js` as a module. `main.js` builds the `Phaser.Game` (256×480,
 `pixelArt`, `Scale.FIT` + `CENTER_BOTH`, parented to `#canvas`), registers the
 scene list, and calls `initSound(game)`.
