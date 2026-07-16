@@ -22,6 +22,7 @@ export const gameState = {
   shootMode: SHOOT_MODES.NORMAL,
   shootSpeed: SHOOT_SPEEDS.NORMAL,
   shortFlg: false,
+  exUnlocked: false,
 };
 
 const COOKIE = 'afc2019_highScore';
@@ -42,6 +43,35 @@ export function saveHighScore() {
   if (gameState.score > gameState.highScore) {
     gameState.highScore = gameState.score;
     document.cookie = `${COOKIE}=${gameState.highScore}; path=/`;
+  }
+}
+
+// EX mode (the super-scaler 3D version, ex.html) is the reward for clearing
+// the game once; the unlock persists via cookie like the high score.
+const EX_COOKIE = 'afc2019_exUnlocked';
+
+export function loadExUnlocked() {
+  if (typeof document === 'undefined' || !document.cookie) return;
+  document.cookie.split(';').forEach((part) => {
+    const [k, v] = part.trim().split('=');
+    if (k === EX_COOKIE && v === '1') gameState.exUnlocked = true;
+  });
+}
+
+export function saveExUnlocked() {
+  gameState.exUnlocked = true;
+  if (typeof document !== 'undefined') document.cookie = `${EX_COOKIE}=1; path=/`;
+  // Unlocked mid-session inside the CMG launcher: advertise the EX version now
+  // so the Guide gains its "Play EX" row without a reload (index.html handles
+  // the already-unlocked case at boot).
+  if (typeof window !== 'undefined' && window.parent !== window) {
+    try {
+      window.parent.postMessage({
+        type: 'cmg-ex',
+        url: new URL('ex.html', window.location.href).href,
+        label: 'EX · Super Scaler 3D',
+      }, '*');
+    } catch (e) { /* not embedded / blocked — ignore */ }
   }
 }
 

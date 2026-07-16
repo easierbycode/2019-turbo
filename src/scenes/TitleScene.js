@@ -64,6 +64,23 @@ export class TitleScene extends Phaser.Scene {
       () => this.tweet(), { origin: 0.5 });
     this.twitterBtn.setPosition(CENTER_X, this.copyright.y - this.twitterBtn.img.height / 2 - 14);
 
+    // EX badge (bottom-right) — subtle reward button, present once the game
+    // has been beaten (or with ?ex=1). Launches the super-scaler 3D version.
+    if (gameState.exUnlocked) {
+      this.exBtn = this.add.container(GAME_WIDTH - 26, this.twitterBtn.y);
+      const ring = this.add.circle(0, 0, 13, 0x000000, 0.55).setStrokeStyle(2, 0xfde047, 0.9);
+      const exTxt = this.add.text(0, 0, 'EX', {
+        fontFamily: '"Courier New", monospace', fontStyle: 'bold', fontSize: '11px', color: '#fde047',
+      }).setOrigin(0.5).setResolution(2);
+      this.exBtn.add([ring, exTxt]);
+      // Hit areas are tested in the object's local top-left space, so the
+      // circle is centred at (radius, radius), not (0, 0).
+      ring.setInteractive(new Phaser.Geom.Circle(13, 13, 15), Phaser.Geom.Circle.Contains);
+      ring.input.cursor = 'pointer';
+      ring.on('pointerup', () => this.startEx());
+      this.exBtn.setAlpha(0);
+    }
+
     // How-to (top-left) and Staff-roll (top-right) buttons, scaled flat then popped in
     this.howtoBtn = new Button(this, 'game_ui', ['howtoBtn0.gif', 'howtoBtn1.gif', 'howtoBtn2.gif'],
       () => window.howtoModalOpen && window.howtoModalOpen(), { origin: 0 });
@@ -101,6 +118,10 @@ export class TitleScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: this.howtoBtn, scaleY: 1, delay: 2400, duration: 300, ease: 'Elastic.easeOut' });
     this.tweens.add({ targets: this.staffrollBtn, scaleY: 1, delay: 2550, duration: 300, ease: 'Elastic.easeOut' });
+    if (this.exBtn) {
+      this.tweens.add({ targets: this.exBtn, alpha: 1, delay: 2700, duration: 300 });
+      this.tweens.add({ targets: this.exBtn, scale: 1.12, delay: 3000, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
   }
 
   enableStart() {
@@ -121,6 +142,17 @@ export class TitleScene extends Phaser.Scene {
   tweet() {
     const url = encodeURIComponent('https://game.capcom.com/cfn/sfv/aprilfool/2019/');
     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${encodeURIComponent('APRIL FOOL 2019 WORLD PRESIDENT\nBEST:' + gameState.highScore)}`, '_blank');
+  }
+
+  startEx() {
+    if (this.exLaunching) return;
+    this.exLaunching = true;
+    Sound.play('se_decision');
+    const fade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000).setOrigin(0, 0).setAlpha(0).setDepth(2000);
+    this.tweens.add({
+      targets: fade, alpha: 1, duration: 600,
+      onComplete: () => { window.location.href = 'ex.html'; },
+    });
   }
 
   titleStart() {

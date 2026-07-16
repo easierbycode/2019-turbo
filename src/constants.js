@@ -57,6 +57,13 @@ export const AKUMA_STAGE = 3;
 export const AKUMA_MODE = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('akuma') === '1';
 
+// ?ex=1 treats the EX (super-scaler 3D) reward as already unlocked, so the
+// title screen shows the EX button without needing a cleared run. The unlock
+// is otherwise earned by beating stage 4 (see CongraScene) and persisted via
+// cookie (state.js).
+export const EX_CHEAT = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('ex') === '1';
+
 // Enemies/bosses descend from the top behind the HUD and are only hittable once
 // they clear it — matching the original (player shots gate at y >= 40; the CA
 // screen-nuke at y >= 20). Without this they can be hit/killed while still
